@@ -1,74 +1,69 @@
 import streamlit as st
 import cv2
 import mediapipe as mp
-import pyautogui
 import platform
 import os
-from pyvirtualdisplay import Display
 
+# Set up display environment before importing pyautogui
+if platform.system() == "Linux":
+    os.environ['DISPLAY'] = ':99'
+    from pyvirtualdisplay import Display
+    display = Display(visible=0, size=(1024, 768))
+    display.start()
 
-def setup_environment():
-    """Set up environment based on operating system."""
-    if platform.system() == "Linux":
-        try:
-            # Set up virtual display for Linux (cloud deployment)
-            if 'DISPLAY' not in os.environ:
-                os.environ['DISPLAY'] = ':99'
-            display = Display(visible=0, size=(1024, 768))
-            display.start()
-            return display
-        except Exception as e:
-            st.error("Failed to initialize display server. Please check if Xvfb is installed.")
-            st.stop()
-    else:
-        # Windows/MacOS (local development)
-        return None
-
+# Now we can safely import pyautogui
+import pyautogui
+pyautogui.FAILSAFE = False
 
 def main():
-    # Initialize environment
-    display = setup_environment()
+    st.title("Virtual Mouse Control")
+    st.write("Control your mouse using hand gestures!")
+
+    # Initialize session state variables
+    if 'is_dragging' not in st.session_state:
+        st.session_state.is_dragging = False
+    if 'running' not in st.session_state:
+        st.session_state.running = True
+
+    # Sidebar controls
+    st.sidebar.header("Controls")
+    detection_confidence = st.sidebar.slider("Detection Confidence", 0.0, 1.0, 0.7)
+
+    if st.sidebar.button('Stop'):
+        st.session_state.running = False
+        st.experimental_rerun()
+
+    # Initialize components
+    hand_detector = mp.solutions.hands.Hands(
+        static_image_mode=False,
+        max_num_hands=1,
+        min_detection_confidence=0.7,
+        min_tracking_confidence=0.7
+    )
+    drawing_utils = mp.solutions.drawing_utils
 
     try:
-        st.title("Virtual Mouse Control")
-        st.write("Control your mouse using hand gestures!")
-
-        # Initialize session state variables
-        if 'is_dragging' not in st.session_state:
-            st.session_state.is_dragging = False
-        if 'running' not in st.session_state:
-            st.session_state.running = True
-
-        # Sidebar controls
-        st.sidebar.header("Controls")
-        detection_confidence = st.sidebar.slider("Detection Confidence", 0.0, 1.0, 0.7)
-
-        if st.sidebar.button('Stop'):
-            st.session_state.running = False
-            st.experimental_rerun()
-
-        # Initialize components
-        hand_detector = mp.solutions.hands.Hands(
-            static_image_mode=False,
-            max_num_hands=1,
-            min_detection_confidence=0.7,
-            min_tracking_confidence=0.7
-        )
-        drawing_utils = mp.solutions.drawing_utils
         screen_width, screen_height = pyautogui.size()
+    except Exception as e:
+        st.error(f"Failed to get screen size: {str(e)}")
+        return
 
-        # Create placeholders
-        video_placeholder = st.empty()
-        status_placeholder = st.empty()
-        metrics_placeholder = st.empty()
+    # Create placeholders
+    video_placeholder = st.empty()
+    status_placeholder = st.empty()
+    metrics_placeholder = st.empty()
 
-        # Start webcam
+    # Start webcam
+    try:
         cap = cv2.VideoCapture(0)
-
         if not cap.isOpened():
             st.error("Could not access webcam! Please check your camera settings.")
-            st.stop()
+            return
+    except Exception as e:
+        st.error(f"Failed to initialize camera: {str(e)}")
+        return
 
+    try:
         while st.session_state.running:
             ret, frame = cap.read()
             if not ret:
@@ -120,8 +115,8 @@ def main():
                             value=f"{vertical_distance:.1f}",
                             delta="Dragging" if st.session_state.is_dragging else "Released"
                         )
-                    except pyautogui.FailSafeException:
-                        st.warning("Mouse movement prevented - failsafe triggered")
+                    except Exception as e:
+                        st.warning(f"Mouse movement error: {str(e)}")
 
             video_placeholder.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB", use_column_width=True)
 
@@ -129,15 +124,13 @@ def main():
         st.error(f"An error occurred: {str(e)}")
     finally:
         # Cleanup
-        if 'is_dragging' in st.session_state and st.session_state.is_dragging:
-            pyautogui.mouseUp()
-        if cap is not None:
-            cap.release()
-        if hand_detector is not None:
-            hand_detector.close()
-        if display is not None:
-            display.stop()
-
+        if st.session_state.get('is_dragging', False):
+            try:
+                pyautogui.mouseUp()
+            except:
+                pass
+        cap.release()
+        hand_detector.close()
 
 if __name__ == "__main__":
     main()
