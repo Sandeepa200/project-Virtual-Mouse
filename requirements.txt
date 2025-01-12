@@ -4,4 +4,5 @@ mediapipe==0.10.20
 pyautogui==0.9.54
 numpy==1.26.3
 Pillow==9.5.0
-pyvirtualdisplay==3.0 #only for stremlit cloud
+pyvirtualdisplay==3.0
+python-xlib==0.33  # Add this for better X server support
