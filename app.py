@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import cv2
 import mediapipe as mp
@@ -24,20 +23,25 @@ def main():
     # Initialize session state variables
     if 'is_dragging' not in st.session_state:
         st.session_state.is_dragging = False
+    if 'running' not in st.session_state:
+        st.session_state.running = True
 
     # Sidebar controls
     st.sidebar.header("Controls")
-    detection_confidence = st.sidebar.slider("Detection Confidence", 0.0, 1.0, 0.7)
+    detection_confidence = st.sidebar.slider("Detection Confidence", 0.0, 1.0, 0.7, key="detection_slider")
+
+    # Stop button in sidebar with unique key
+    if st.sidebar.button('Stop', key='stop_button'):
+        st.session_state.running = False
+        st.experimental_rerun()
 
     # Initialize components
     hand_detector = initialize_hand_detector()
     drawing_utils = mp.solutions.drawing_utils
     screen_width, screen_height = pyautogui.size()
 
-    # Create a placeholder for the webcam feed
+    # Create placeholders
     video_placeholder = st.empty()
-
-    # Status indicators
     status_placeholder = st.empty()
     metrics_placeholder = st.empty()
 
@@ -45,7 +49,7 @@ def main():
     cap = cv2.VideoCapture(0)
 
     try:
-        while True:
+        while st.session_state.running:
             ret, frame = cap.read()
             if not ret:
                 st.error("Error: Could not access webcam")
@@ -99,11 +103,12 @@ def main():
                         st.session_state.is_dragging = False
                         status_placeholder.info("Released")
 
-                    # Update metrics
+                    # Update metrics with unique key
                     metrics_placeholder.metric(
                         label="Hand Distance",
                         value=f"{vertical_distance:.1f}",
-                        delta="Dragging" if st.session_state.is_dragging else "Released"
+                        delta="Dragging" if st.session_state.is_dragging else "Released",
+                        key="hand_distance_metric"
                     )
 
             # Convert frame to RGB for Streamlit
@@ -111,10 +116,6 @@ def main():
 
             # Display the frame
             video_placeholder.image(rgb_frame, channels="RGB", use_column_width=True)
-
-            # Check for stop button
-            if st.sidebar.button('Stop'):
-                break
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
