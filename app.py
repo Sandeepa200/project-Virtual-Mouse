@@ -103,12 +103,11 @@ def main():
                         st.session_state.is_dragging = False
                         status_placeholder.info("Released")
 
-                    # Update metrics with unique key
+                    # Update metrics without key parameter
                     metrics_placeholder.metric(
                         label="Hand Distance",
                         value=f"{vertical_distance:.1f}",
-                        delta="Dragging" if st.session_state.is_dragging else "Released",
-                        key="hand_distance_metric"
+                        delta="Dragging" if st.session_state.is_dragging else "Released"
                     )
 
             # Convert frame to RGB for Streamlit
