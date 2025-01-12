@@ -4,6 +4,7 @@ import mediapipe as mp
 import platform
 import os
 import subprocess
+import pyautogui
 
 # Set up X environment before any display-related imports
 if platform.system() == "Linux":
@@ -35,13 +36,44 @@ if platform.system() == "Linux":
         st.stop()
 
 # Now we can safely import pyautogui
-import pyautogui
-
 pyautogui.FAILSAFE = False
+
+
+# Check if running on Streamlit Cloud
+def is_streamlit_cloud():
+    try:
+        # Streamlit Cloud sets this environment variable
+        return os.environ.get('STREAMLIT_RUNTIME_ENV') == 'cloud'
+    except:
+        return False
 
 
 def main():
     st.title("Virtual Mouse Control")
+
+    if is_streamlit_cloud():
+        st.warning(
+            "⚠️ This app requires webcam access and cannot run on Streamlit Cloud. Please run it locally instead.")
+
+        st.markdown("""
+        ### How to run locally:
+        1. Clone the repository
+        2. Install the required packages:
+           ```bash
+           pip install -r requirements.txt
+           ```
+        3. Run the app:
+           ```bash
+           streamlit run app.py
+           ```
+
+        ### System Requirements:
+        - Python 3.10
+        - Webcam
+        - Required packages from requirements.txt
+        """)
+        return
+
     st.write("Control your mouse using hand gestures!")
 
     # Initialize session state variables
