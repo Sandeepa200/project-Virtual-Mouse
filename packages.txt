@@ -5,7 +5,7 @@ x11-utils
 libxext6
 libsm6
 libxrender1
-xvfb
+xauth
 python3-xlib
 python3-tk
 python3-dev

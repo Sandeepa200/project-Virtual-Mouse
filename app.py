@@ -3,17 +3,42 @@ import cv2
 import mediapipe as mp
 import platform
 import os
+import subprocess
 
-# Set up display environment before importing pyautogui
+# Set up X environment before any display-related imports
 if platform.system() == "Linux":
-    os.environ['DISPLAY'] = ':99'
-    from pyvirtualdisplay import Display
-    display = Display(visible=0, size=(1024, 768))
-    display.start()
+    try:
+        # Create .Xauthority file
+        home_dir = os.path.expanduser('~')
+        xauth_file = os.path.join(home_dir, '.Xauthority')
+
+        if not os.path.exists(xauth_file):
+            # Create empty .Xauthority file
+            open(xauth_file, 'a').close()
+            os.chmod(xauth_file, 0o600)
+
+        # Set up virtual display
+        os.environ['DISPLAY'] = ':99'
+        os.environ['XAUTHORITY'] = xauth_file
+
+        # Initialize virtual display with Xvfb
+        from pyvirtualdisplay.display import Display
+
+        display = Display(visible=0, size=(1024, 768), backend='xvfb')
+        display.start()
+
+        # Add authentication
+        subprocess.run(['xauth', 'generate', ':99', '.', 'trusted'])
+
+    except Exception as e:
+        st.error(f"Failed to initialize display environment: {str(e)}")
+        st.stop()
 
 # Now we can safely import pyautogui
 import pyautogui
+
 pyautogui.FAILSAFE = False
+
 
 def main():
     st.title("Virtual Mouse Control")
@@ -53,7 +78,6 @@ def main():
     status_placeholder = st.empty()
     metrics_placeholder = st.empty()
 
-    # Start webcam
     try:
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
@@ -123,7 +147,6 @@ def main():
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
     finally:
-        # Cleanup
         if st.session_state.get('is_dragging', False):
             try:
                 pyautogui.mouseUp()
@@ -131,6 +154,7 @@ def main():
                 pass
         cap.release()
         hand_detector.close()
+
 
 if __name__ == "__main__":
     main()
