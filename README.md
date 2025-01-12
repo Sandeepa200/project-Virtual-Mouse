@@ -15,7 +15,7 @@ This project demonstrates a virtual mouse control system using hand gestures, de
 ## Project Structure
 ```plaintext
 .
-├── app.py                  # Main file for Streamlit Cloud deployment.
+├── app.py                  # Main file for Streamlit Cloud deployment do not use this.
 ├── local_streamlit_app.py  # For running the Streamlit app locally.
 ├── local_code.py           # Standalone local script without Streamlit.
 ├── requirements.txt        # Python dependencies.
