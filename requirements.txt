@@ -4,3 +4,4 @@ mediapipe==0.10.20
 pyautogui==0.9.54
 numpy==1.26.3
 Pillow==9.5.0
+pyvirtualdisplay==3.0
