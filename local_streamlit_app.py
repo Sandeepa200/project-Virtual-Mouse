@@ -2,19 +2,12 @@ import streamlit as st
 import cv2
 import mediapipe as mp
 import pyautogui
-import platform
-from pyvirtualdisplay import Display  # Virtual display for Linux systems
+import numpy as np
+from PIL import Image
+import os
 
-def initialize_virtual_display():
-    """Initialize virtual display only on Linux systems."""
-    if platform.system() == "Linux":
-        display = Display(visible=0, size=(1024, 768))
-        display.start()
-        return display
-    return None
 
 def initialize_hand_detector():
-    """Initialize the MediaPipe hand detector."""
     return mp.solutions.hands.Hands(
         static_image_mode=False,
         max_num_hands=1,
@@ -22,10 +15,8 @@ def initialize_hand_detector():
         min_tracking_confidence=0.7
     )
 
-def main():
-    # Start virtual display if needed
-    display = initialize_virtual_display()
 
+def main():
     st.title("Virtual Mouse Control")
     st.write("Control your mouse using hand gestures!")
 
@@ -39,7 +30,7 @@ def main():
     st.sidebar.header("Controls")
     detection_confidence = st.sidebar.slider("Detection Confidence", 0.0, 1.0, 0.7, key="detection_slider")
 
-    # Stop button in sidebar
+    # Stop button in sidebar with unique key
     if st.sidebar.button('Stop', key='stop_button'):
         st.session_state.running = False
         st.experimental_rerun()
@@ -88,10 +79,13 @@ def main():
                     screen_y = min(screen_height, max(0, screen_height / frame_height * index_y))
 
                     # Draw markers
-                    cv2.circle(img=frame, center=(index_x, index_y), radius=10, color=(0, 255, 255))
+                    cv2.circle(img=frame, center=(index_x, index_y),
+                               radius=10, color=(0, 255, 255))
+
                     thumb_x = int(thumb.x * frame_width)
                     thumb_y = int(thumb.y * frame_height)
-                    cv2.circle(img=frame, center=(thumb_x, thumb_y), radius=10, color=(0, 255, 255))
+                    cv2.circle(img=frame, center=(thumb_x, thumb_y),
+                               radius=10, color=(0, 255, 255))
 
                     # Calculate distance
                     vertical_distance = abs(index_y - thumb_y)
@@ -109,7 +103,7 @@ def main():
                         st.session_state.is_dragging = False
                         status_placeholder.info("Released")
 
-                    # Update metrics
+                    # Update metrics without key parameter
                     metrics_placeholder.metric(
                         label="Hand Distance",
                         value=f"{vertical_distance:.1f}",
@@ -130,8 +124,7 @@ def main():
             pyautogui.mouseUp()
         cap.release()
         hand_detector.close()
-        if display:
-            display.stop()
+
 
 if __name__ == "__main__":
     main()
